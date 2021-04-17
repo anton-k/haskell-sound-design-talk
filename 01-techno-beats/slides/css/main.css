@@ -1,0 +1,9 @@
+@font-face {
+  font-family: 'Gula FREE';
+  src: url(font/gula-free.regular.ttf);
+}
+
+
+h1 {
+  font-family: 'Gula FREE';
+}
