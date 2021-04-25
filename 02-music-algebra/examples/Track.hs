@@ -6,24 +6,28 @@ import Csound.Base
 import Instr
 import Utils
 
-track = mix $ mel [intro, sec1, bridge, sec2, outro]
+track :: Sig2
+track = mix $ mel [intro, sec1, bridge, mul 1.15 sec2, outro]
 
+-- section 1
 sec1 = mel
   [ har [kk, wb, chs1, bs1, xy11]
   , har [kk, wb, hh, chs1, loopBy 2 xy12, bs1]
   ]
 
 bridge = har [hh, chs2, mel [rest 8, xy12], sea1]
-sec2   = har [kk, wb, hh, chs2, bs2, xy13, eff (pure . at (hp 150 0.1)) sea1]
+
+--- section 2
+sec2   = har [kk, wb, hh, chs2, bs2, xy13, at (hp 150 0.1) sea1]
 
 intro = shortKk
 outro = har [shortKk, chs3, xy14, rest 2]
 
 ---------------------------------------------------------
--- effects
+-- atmosphere
 
 -- sea
-sea1 = eff (pure . cave 0.5) $ sco sea $ str (8 * 2) $ temp 0.8
+sea1 = cave 0.5 $ sco sea $ str (8 * 2) $ temp 0.8
 
 ---------------------------------------------------------
 -- pads
@@ -50,7 +54,7 @@ chs1 = chs' chords1
 chs2 = chs' chords2
 chs3 = chs' chords3
 
-chs' pitches = eff (pure . hall 0.35 . mixAt 0.3 (echo 0.25 0.3)) $
+chs' pitches = hall 0.35 $ mixAt 0.3 (echo 0.25 0.3) $
   sco pad $ str 2 $ loopBy 2 $ mel $ fmap ch pitches
   where
     ch as = chord 0.35 $ extend (p_ <$> as)
@@ -65,7 +69,7 @@ bs1 = bs' chords1
 bs2 = bs' chords2
 bs3 = bs' chords3
 
-bs' pitches = eff (pure . chamber 0.2 . mixAt 0.3 (echo 0.25 0.5)) $
+bs' pitches = chamber 0.2 $ mixAt 0.3 (echo 0.25 0.5) $
   eff bass $ sco bassArg $ str 0.25 $ loopBy 2 $ mel $ fmap ch pitches
   where
     ch as = arp 0.4 $ extend ( (dwn . p_) <$> as)
@@ -75,7 +79,7 @@ bs' pitches = eff (pure . chamber 0.2 . mixAt 0.3 (echo 0.25 0.5)) $
 -- drums
 
 -- kick
-kk = eff (pure . room 0.1) $ loopBy 8 $ shortKk
+kk = room 0.1 $ loopBy 8 $ shortKk
 
 shortKk = str 0.5 $ sco kick notes
   where
@@ -83,7 +87,7 @@ shortKk = str 0.5 $ sco kick notes
     notes = mel $ fmap temp accents
 
 -- wood block
-wb = eff (pure . mul 0.4 . chamber 0.1 . mixAt 0.5 (echo 0.25 0.3)) $
+wb = mul 0.4 $ chamber 0.1 $ mixAt 0.5 (echo 0.25 0.3) $
   sco woodBlock wnotes
   where
     wnotes = str 0.5 $ loopBy 9 $ mel
@@ -93,7 +97,7 @@ wb = eff (pure . mul 0.4 . chamber 0.1 . mixAt 0.5 (echo 0.25 0.3)) $
 
 -- hihat
 
-hh = eff (pure . mul 1.6) $ sco hihat hnotes
+hh = mul 1.6 $ sco hihat hnotes
   where
     hnotes = loopBy 4 $ mel
       [ loopBy 2 $ str (1/8) $
@@ -101,9 +105,9 @@ hh = eff (pure . mul 1.6) $ sco hihat hnotes
       , rest 2 ]
 
 --------------------------------------
--- simple xylo
+-- xylo
 
-scoXylo = eff (pure . mul 1.3 . chamber 0.2) . sco xylo
+scoXylo = mul 1.3 . chamber 0.2 . sco xylo
 
 xy11 = scoXylo $ mel [xy1, rest 2, xy1', rest 2, xy2, rest 3, xy3, rest 3]
 xy12 = scoXylo $ mel [xy2, xy2, xy3, xy3, rest 4]
