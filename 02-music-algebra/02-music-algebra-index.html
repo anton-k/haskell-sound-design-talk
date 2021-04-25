@@ -1,0 +1,724 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>reveal.js</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="dist/theme/beige.css" id="theme">
+
+		<link rel="stylesheet" href="css/main.css">
+
+    <style> 
+.container{
+    display: flex;
+}
+.col{
+    flex: 1;
+}
+
+@font-face {
+  font-family: Gula;
+  src: url('font/gula-free.regular.ttf');
+}
+
+
+.reveal h1,
+.reveal h2,
+.reveal h3,
+.reveal h4,
+.reveal h5,
+.reveal h6 {
+  font-family: Gula;
+}
+    </style> 
+		<!-- Theme used for syntax highlighted code -->
+		<link rel="stylesheet" href="plugin/highlight/atom-one-light.css" id="atom-one-light">
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+        <section> <h1>Musical Algebras</h1></section>
+				
+        <section>
+        
+          <h2>PAD sound</h2>
+
+          <ul>
+            <li> Плавная атака и релиз</li>
+            <li> Много медленного внутреннего движения (за счёт LFO)</li>
+            <li> Сильный срез филтром высоких частот</li>
+            </ul>
+
+          <pre class="haskell"><code data-trim data-noescape>
+pad (amp, cps) = sig amp * evenEnv * (lowPassFilter (fatSound cps))
+          </code></pre>
+        </section>
+
+        <section>
+        
+          <h2>PAD sound</h2>
+
+          <pre class="haskell"><code data-trim data-noescape>
+evenEnv = leg 0.5 0 1 0.5
+lowPassFilter cps = mlp (evenEnv * cps + 400) 0.1 
+fatSound cps = saw cps
+
+pad (amp, cps) = sig amp * evenEnv * 
+  (lowPassFilter (sig cps) $ fatSound (sig cps))
+         </code></pre>
+        </section>
+
+        <section>
+        
+          <h2>PAD sound</h2>
+
+          <pre class="haskell"><code data-trim data-noescape>
+evenEnv = leg 0.5 0 1 0.5
+lowPassFilter cps = mlp (evenEnv * cps + 400) 0.1 
+
+fatSound cps = 
+  sum [ pw (0.1 + 0.4 * uosc 0.2) cps 
+      , 0.3 * uosc 0.13 * tri (cps * 2 * cent (2 * uosc 0.13)) 
+      , 0.2 * uosc 0.1  * tri (cps * 3 * cent (4 * uosc 0.17))
+      ]
+ 
+pad :: (D, D) -> SE Sig2
+pad (amp, cps) = pure $ fromMono $ sig amp * evenEnv * 
+  (lowPassFilter (sig cps) $ fatSound (sig cps)
+         </code></pre>
+        </section>
+         
+        <section>
+            <h2> Everything is a Filter
+            </h2>
+
+              <p>Как превратить шум в настоящую перкуссию?</p>
+          
+          <pre class="haskell"><code data-trim data-noescape>
+-- шумовой хлопок
+dac $ mul (0.5 * linseg [1, 0.2, 0]) white
+          </code></pre>
+
+
+        </section>
+
+        <section>
+            <h2> Everything is a Filter
+            </h2>
+
+         
+              <div class="container">
+                <div class="col">
+          <pre class="haskell"><code data-trim data-noescape>
+-- частоты - резонансы объекта
+-- множители - амплитуды резонансов
+wooden asig = bat 
+  (\x ->      bp 560 70 x 
+      + 0.8 * bp 1110 80 x 
+      +       bp 2500 70 x 
+      + 0.5 * bp 3000 100 x) 
+  asig
+   
+boom = 
+  mul (linseg [1, 0.2, 0] ** 2) white
+
+-- задание: превратить в ксилофон 
+dac $ room 0.15 $ wooden boom
+          </code></pre>
+                </div>
+                <div class="col">
+              <p>Оказывается многие объекты - это серия полосных фильтров </p>
+                <img src="images-02/block-1.jpg" width="200" height="350" />
+                </div>
+
+                </div>
+
+        </section>
+
+
+        <section>
+            <h2> Sound Palette
+            </h2>
+          <div class="container">
+              <div class="col">
+
+
+            <p> Как писать треки?</p>
+
+            <ul>
+              <li> Светофор </li>
+              <li> Сирена </li>
+              <li> Бас / Лид </li>
+              <li> Бочка </li>
+              <li> Хай-хэт </li>
+              <li> Деревянный блок </li>
+              <li> Пады </li>
+              <li> Ксилофон </li>
+            </ul>
+          </div>
+              <div class="col">
+                <img src="images-02/no-sound.jpg" width="650" height="450" />
+              </div>
+      
+        </section>
+
+        <section>
+
+          <!--          <h3> Пешеходный сфетофор </h3> -->
+          <h3> Csound way </h3> 
+
+          <div class="container">
+          <div class="col">
+
+          <pre class="haskell"><code data-trim data-noescape>
+instr Kick                -- бочку
+... define kick ...
+endin
+
+instr Bass                -- бас
+... define bass ...
+endin
+--     time  dur  args
+i Kick    0  0.2  0.5     -- ноты бочки
+i Kick    1  0.2  0.5
+i Kick    2  0.2  0.5
+i Kick    3  0.2  0.5
+
+i Bass    0  2    0.5 220  -- ноты баса
+i Bass    2  2    0.3 300
+          </code></pre>
+          </div>
+          <div class="col">
+                <img src="images-02/perfo.jpg" width="300" height="550" />
+          </div>
+          </div>
+        </section>
+
+
+        <section>
+          <h3> What Haskeller sees </h3> 
+
+          <pre class="haskell"><code data-trim data-noescape>
+-- Инструмент -- это функуция из нот в звуки
+type Instr args out = args -> SE out
+
+type Time = D  -- время
+type Dur  = D  -- длина ноты (секунды)
+
+-- Нота - это четвёрка: (имя инструмента, время, продолжительность, аргументы)
+type Event args = (InstrName args, Time, Dur, args)
+
+-- Ноты - список нот для данного инструмента
+type Scores args = [Event args]
+
+play :: Scores args -> SE out
+          </code></pre>
+
+        </section>
+
+        <section>
+
+          <h3> Why not? </h3> 
+
+          <ul>
+            <li> Абсолютные значения времени для нот </li>
+            <li> Нет абстракций </li>
+            <li> Ноты зашиты в код </li>
+            <li> Связь с инструментами по соглашениям </li>
+          </ul>
+
+          <pre class="haskell"><code data-trim data-noescape>
+--     time  dur  args
+i Kick    0  0.2  0.5       -- ноты для бочки
+i Kick    1  0.2  0.5
+
+i Bass    0  2    0.5 220   -- ноты для баса
+i Bass    2  2    0.3 300
+          </code></pre>
+
+        </section>
+        <section>
+
+          <h3> Algebras
+          </h3>
+
+          <pre class="haskell"><code data-trim data-noescape>
+-- Набор операций над однотипными сущностями
+type Algebra f a = f a -> a
+
+-- Пример:
+class Num a where
+  (+) :: a -> a -> a
+  (*) :: a -> a -> a
+  negate :: a -> a
+  ...
+          </code></pre>
+
+          <p>Наши сущности - наборы нот</p>
+
+          <p>Операциями собираем из простых нот - ноты побольше</p>
+
+        </section>
+        <section>
+
+          <h3> Algebra for Music </h3>
+
+            <div class="container">
+              <div class="col">
+                <img src="images-02/sco-api.png" width="700" height="400" />
+          <p> DELay, STRetch, HARmony, MELody </p>
+                         </div> 
+              <div class="col">
+                <img src="images-02/hudak-1.jpeg" width="350" height="450" />
+          <p> Paul Hudak</p>
+                         </div> 
+
+                         </div> 
+        </section>
+         <section>
+          <h3> How to
+          </h3>
+
+
+          <pre class="haskell"><code data-trim data-noescape>
+-- событие: (время, длительность, что произошло)
+type Event t a = (t, t, a)
+
+-- трэк - набор событий с общей длиной трэка
+data Track t a = Track t [Event t a]
+
+-- Наборы нот в нашей либе
+type Sco a = Track Sig a
+          </code></pre>
+
+         </section>
+
+         <section>
+           <h3>Algebra for Sco</h3>
+
+           <p> Пакет temporal-media (see hackage docs)</p>
+
+            <div class="container">
+              <div class="col">
+          <pre class="haskell"><code data-trim data-noescape>
+
+-- Сдвинуть по времени все ноты
+del :: D -> Sco a -> Sco a
+
+
+-- Ускорить, замедлить весь блок нот
+str :: D -> Sco a -> Sco a
+
+
+-- Играть блоки нот один за другим
+mel :: [Sco a] -> Sco a
+
+
+-- Играть блоки нот одновременно
+har :: [Sco a] -> Sco a
+          </code></pre>
+
+
+                         </div> 
+
+              <div class="col">
+
+                <img src="images-02/sco-api-col.png" width="300" height="450" />
+              </div> 
+            </div> 
+         </section>
+
+         <section>
+
+        <h3> SCO primitives </h3>
+
+
+                <pre class="haskell"><code data-trim data-noescape>
+-- Блок нот с одним событием, что длится 1 секунду
+temp :: a -> Sco a
+
+-- Пауза
+rest :: D -> Sco a
+                </code></pre>
+
+                <p>Полезности</p>
+                <pre class="haskell"><code data-trim data-noescape>
+-- повторить N раз
+loopBy :: Int -> Sco a -> Sco a
+loopBy n a = mel $ replicate n a
+                </code></pre>
+
+         </section>
+          <section>
+
+        <h3> Examples </h3>
+        <div class="container">
+          <div class="col">
+                <img src="images/kick-drum.jpg" width="350" height="350" />
+
+            </div>
+
+          <div class="col">
+                <pre class="haskell"><code data-trim data-noescape>
+kick :: D -> SE Sig2
+kick amp = pure $ fromMono $ 
+  let k = linseg [1, 0.3, 0] ** 2 
+  in  sig amp * k * osc' 0.25 (150 * k)
+
+dac $ kick 0.3 
+                </code></pre>
+            </div>
+            </div>
+         </section>
+         <section>
+          <h3> Kick + Sco </h3>
+                
+                <p> Как играть ноты </p>
+
+                <pre class="haskell"><code data-trim data-noescape>
+sco :: (Args a, Sigs b) => 
+  (a -> SE b) -> Sco a -> Sco (Mix b)
+sco instr notes = ...
+
+mix :: Sco (Mix b) -> b
+mix sco = sig
+                </code></pre>
+                
+                <p> Один удар бочки </p>
+
+                <pre class="haskell"><code data-trim data-noescape>
+notes = temp 0.5 
+
+dac $ mix $ sco kick notes
+                </code></pre>
+         </section>
+         <section>
+          <h3> Kick + Sco </h3>
+                
+                <p> Выделяем сильную долю </p>
+
+                <pre class="haskell"><code data-trim data-noescape>
+accents = [0.9, 0.6, 0.4, 0.5]
+
+notes = mel $ fmap temp accents
+
+dac $ mix $ sco kick notes
+                </code></pre>
+                
+                <p> Играем несколько раз в два раза быстрее </p>
+
+                <pre class="haskell"><code data-trim data-noescape>
+-- в два раза быстрее
+notes = str 0.5 $ mel $ fmap temp accents
+
+-- повторим четыре раза
+notes = loopBy 4 $ str 0.5 $ mel $ fmap temp accents
+                </code></pre>
+         </section>
+          
+        <section>
+          <h3> Chords </h3>
+                <pre class="haskell"><code data-trim data-noescape>
+-- аккорд играет 1 секунду набор нот с одинаковой громкостью
+chord amp as = har $ fmap (\cps -> temp (amp, cpspch cps)) as
+
+-- послушаем
+dac $ mix $ sco pad $ chord 0.5 [7.00, 7.04, 7.07]
+
+-- несколько аккордов
+dac $ mix $ sco pad $ str 2 $ loopBy 2 $ mel
+  [ chord 0.5 [7.00, 7.03, 7.07]   -- Cm
+  , chord 0.5 [7.00, 7.05, 7.08]   -- Fm
+  , chord 0.5 [7.02, 7.05, 7.07]   -- G7
+  , chord 0.5 [7.00, 7.03, 7.07]   -- Cm
+  ]
+
+                </code></pre>
+
+         </section>
+
+
+         <section>
+        <h3>  Kick + chords </h3>
+                <pre class="haskell"><code data-trim data-noescape>
+kk = sco kick $ loopBy 8 $ str 0.5 $ mel $ fmap temp [0.7, 0.5, 0.4, 0.5]
+
+-- несколько аккордов
+chords = sco pad $ str 2 $ loopBy 2 $ mel
+  [ chord 0.5 [7.00, 7.03, 7.07]   -- Cm
+  , chord 0.5 [7.00, 7.05, 7.08]   -- Fm
+  , chord 0.5 [7.02, 7.05, 7.07]   -- G7
+  , chord 0.5 [7.00, 7.03, 7.07]   -- Cm
+  ]
+
+dac $ mix $ har [kk, eff (hall 2) $ del 2 $ chords]
+                </code></pre>
+
+
+ 
+         </section>
+         
+         <section>
+        <h3> Percussion </h3>
+
+        <div class="container">
+          <div class="col">
+
+          <pre class="haskell"><code data-trim data-noescape>
+woodBlock :: D -> SE Sig2
+woodBlock amp = mul (sig amp) $ 
+  fmap fromMono $ wooden boom
+
+wnotes = str 0.5 $ loopBy 12 $ mel 
+  [ str 0.5 $ mel [temp 0.5, temp 0.2]
+  , rest 2.5]
+
+wb = sco woodBlock wnotes
+
+dac $ mix $ har 
+  [ kk
+  , wb
+  , del 2 $ chords]
+          </code></pre>
+          </div>
+
+          <div class="col">
+                <img src="images-02/block-1.jpg" width="200" height="350" />
+
+            </div>
+            </div>
+         </section>
+         <section>
+        <h3> SCO effects </h3>
+
+          <pre class="haskell"><code data-trim data-noescape>
+-- Добавляет обработку сигнала на блоке сигналов
+eff :: (a -> SE b) -> Sco (Mix a) -> Sco (Mix b)
+
+dac $ mix $ har 
+  [ kk
+
+  -- добавим дилэй на перкуссию
+  , eff (pure . mixAt 0.25 (echo 0.25 0.3)) wb
+
+  -- добавим реверб на аккорды
+  , eff (pure . mul 0.7 . hall 0.3) $ del 2 $ chords
+  ]
+          </code></pre>
+         </section>
+          
+          <section>
+        <h3> Hi-hat </h3>
+
+          <pre class="haskell"><code data-trim data-noescape>
+hihat :: D -> SE Sig2 
+hihat amp  = at fromMono $ at (mul 2 . lp 3500 0.1 . hp 400 0.1) 
+  $ mul (sig amp * linseg [1, 0.2, 0] ** 2) pink
+
+-- ноты с амплитудами
+hnotes = loopBy 10 $ mel 
+  [ loopBy 2 $ str (1/8) $ 
+      mel $ temp <$> [ 1, 0.5, 0.5, 0, 0.2, 0.3, 1, 0.5]
+  , rest 2 ]
+
+-- применим инструмент и получим ноты с сигналами
+hh = sco hihat hnotes
+
+-- партии вместе
+dac $ mix $ har [kk, hh, wb, chords]
+          </code></pre>
+
+         </section>
+          <section>
+        <h3> Bridge </h3>
+          <pre class="haskell"><code data-trim data-noescape>
+chords2 = sco pad $ str 2 $ loopBy 4 $ mel
+  [ chord 0.5 [7.00, 7.05, 7.08]   -- Fm
+  , chord 0.5 [7.02, 7.07, 7.10]   -- Gm
+  ]
+
+sec1   = har [kk, hh, wb, chords]
+bridge = har [hh, eff (pure . mixAt 0.5 (echo 0.25 0.3)) wb, chords2]
+
+track = mel [sec1, bridge, sec1]
+          </code></pre>
+
+         </section>
+         
+         <section>
+
+           <h3> Bass Problem</h3>
+
+
+          <pre class="haskell"><code data-trim data-noescape>
+lead x = mul 0.4 $ sum
+  [ saw x 
+  , saw (x * cent 4) 
+  , sqr (2 * x * cent 11)
+  ]
+
+freqs = constSeq (fmap cpspch [6.00, 6.01, 6.03, 5.10]) 4
+
+dac $ mlp (250 + 4500 * uosc 0.15) 0.1 $ lead freqs
+         </code></pre>
+
+         </section>
+         
+        
+         <section>
+           <h3> Dubstep BASS </h3>
+          <pre class="haskell"><code data-trim data-noescape>
+-- инструмент возвращает сигналы для амплитуды и частоты
+bassArg :: (D, D) -> SE Sig2
+bassArg (amp, cps) = pure (sig amp, sig cps)
+
+-- будем применять как эффект 
+-- через функцию eff
+bass :: Sig2 -> SE Sig2
+bass (amp, cps) = pure $ fromMono $ mul (smooth 0.01 amp) 
+  $ mlp (200 + 4500 * uosc 0.15) 0.1 $ lead (smooth 0.01 cps)
+
+
+          </code></pre>
+         </section>
+         <section>
+           <h3> BASS Notes</h3>
+          <pre class="haskell"><code data-trim data-noescape>
+:set -XTupleSections
+
+bassNotes = loopBy 4 $ str 0.25 $ mel $ (temp . (0.5 , ) . cpspch) <$> 
+  [6.00, 6.02, 6.03, 5.10, 0, 6.03, 6.07, 6.12, 6.10, 6.07, 0]
+
+bs = eff bass $ sco bassArg bassNotes
+          
+dac $ mix $ har [kk, bs, hh, wb]
+          </code></pre>
+         </section>
+
+         <section>
+           <h3> Track </h3>
+
+          <pre class="haskell"><code data-trim data-noescape>
+chords = sco pad mel [ch1, ch2, ch3, ch4]   -- section 1
+
+kk = sco kick kickNotes
+hh = sco hihat hihatNotes
+bas = eff bass $ sco bassArg basNotes
+
+kk2 = ...                                   -- section 2
+hh2 = ...
+
+sec1   = loopBy 2 $ har [kk, hh, bas]       -- track parts
+bridge = loopBy 2 $ har [hh, bas, wb]
+sec2   = loopBy 4 $ har [kk2, hh2, bas2]
+outro  = [hh1, bas1, wb]
+
+track  = mel [sec1, bridge, sec2, outro]    -- track
+          </code></pre>
+ 
+          </section>
+
+          <section>
+           <h3>Hints: Pitches </h3>
+
+
+                <pre class="haskell"><code data-trim data-noescape>
+pitches  = [1, 9/8, 6/5, 4/3, 3/2, 5/3, 15/8] -- ноты тональности
+
+baseNote = cpspch 8.00                  -- тоника (оновная нота)
+
+p x = baseNote * pitches !! (x - 1)     -- класс нот
+
+oct n x = (2 ** n) * x                  -- перенос по октавам
+up = oct 1
+dwn = oct (-1)
+p' = up . p                             -- нота на октаву выше и ниже
+p_ = dwn . p
+
+freqs = constSeq [p 1, p 3, p 2, p_ 7] 4
+
+dac $ osc freqs
+         </code></pre>
+
+          </section>
+
+          <section>
+           <h3>Hints: Note duration </h3>
+
+                <pre class="haskell"><code data-trim data-noescape>
+en = str 0.125  -- eights note
+qn = str 0.25   -- quater note
+hn = str 0.5    -- half note
+bn = str 2      -- brewis note (two whole notes)
+
+dot = str 1.5   -- dotted note
+ddot = str 1.25 -- double dotted note
+
+-- example
+t x = temp (0.5, p x)
+
+notes = mel [qn $ t 1, hn $ t 2, en $ mel [t 3, t 4]]
+         </code></pre>
+
+          </section>
+
+         
+         <section>
+
+           <h3> Thanks </h3>
+
+           <ul>
+             <li> <b>hackage</b>:   
+                csound-expression, csound-catalog, temporal-media
+             </li> 
+             <li> <b>real-world examples:</b> csound-bits (github repo)
+             </li> 
+
+             <li>
+               <b>github</b>: anton-k, spell-music
+               </li>
+             
+               <li>
+                 <b>soundcloud:</b> anton-kho, tag #csound
+               </li>
+               
+               <li>
+                 <b>bandcamp, itunes, spotify, yandex music etc.:</b> Anton Kholomiov
+               </li>
+               
+               </li>
+             </ul>
+
+         </section>
+<!--          
+         <section>
+         </section>
+-->
+
+      </div>
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+		<script>
+			// More info about initialization & config:
+			// - https://revealjs.com/initialization/
+			// - https://revealjs.com/config/
+			Reveal.initialize({
+				hash: true,
+        width: 1200,
+
+				// Learn about plugins: https://revealjs.com/plugins/
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+			});
+
+      
+		</script>
+	</body>
+</html>
