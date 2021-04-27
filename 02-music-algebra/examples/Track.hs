@@ -11,17 +11,17 @@ track = mix $ mel [intro, sec1, bridge, mul 1.15 sec2, outro]
 
 -- section 1
 sec1 = mel
-  [ har [kk, wb, chs1, bs1, xy11]
-  , har [kk, wb, hh, chs1, loopBy 2 xy12, bs1]
+  [ har [drums1, chs1, bs1, xy11]
+  , har [drums1, chs1, loopBy 2 xy12, bs1]
   ]
 
 bridge = har [hh, chs2, mel [rest 8, xy12], sea1]
 
 --- section 2
-sec2   = har [kk, wb, hh, chs2, bs2, xy13, at (hp 150 0.1) sea1]
+sec2   = har [drums1, chs2, bs2, xy13, at (hp 150 0.1) sea1]
 
-intro = shortKk
-outro = har [shortKk, chs3, xy14, rest 2]
+intro = har [mel [k11, k12], shortHh]
+outro = har [k11, chs3, xy14, rest 2]
 
 ---------------------------------------------------------
 -- atmosphere
@@ -78,28 +78,33 @@ bs' pitches = chamber 0.2 $ mixAt 0.3 (echo 0.25 0.5) $
 ---------------------------------------------------------
 -- drums
 
--- kick
-kk = room 0.1 $ loopBy 8 $ shortKk
+drums1 = har [loopBy 2 $ har [loopBy 2 $ kk, wb1], hh]
 
-shortKk = str 0.5 $ sco kick notes
-  where
-    accents = [0.9, 0.6, 0.4, 0.5]
-    notes = mel $ fmap temp accents
+-- no kick
+drums2 = har [loopBy 2 wb1, hh]
+
+-- kick
+kk = room 0.1 $ mel [k11, k12]
+
+k11 = mul 1.3 $ sco kick $ mel
+  [ en $ temp 0.8, qn $ temp 0.5, qn $ temp 0.7, enr, qnr
+  , qnr, qn $ temp 0.5, qnr, qn $ temp 0.5]
+
+k12 = mul 1.3 $ sco kick $ mel
+  [ en $ temp 0.8, qn $ temp 0.5, qn $ temp 0.7, enr, qnr
+  , qnr, qn $ temp 0.5, rest 0.5]
 
 -- wood block
-wb = mul 0.4 $ chamber 0.1 $ mixAt 0.5 (echo 0.25 0.3) $
-  sco woodBlock wnotes
-  where
-    wnotes = str 0.5 $ loopBy 9 $ mel
-      [ str 0.5 $ mel [temp 0.5, temp 0.2]
-      , rest 2.5
-      ]
+wb1 = mul 0.9 $ chamber 0.15 $ mixAt 0.2 (echo 0.25 0.3) $ sco woodBlock $ mel
+      [ rest 1, temp 0.5, temp 0.5, temp 0.5
+      , qn $ temp 0.7, qn $ temp 0.5, rest 1, temp 0.5]
 
 -- hihat
+hh = loopBy 4 shortHh
 
-hh = mul 1.6 $ sco hihat hnotes
+shortHh = mul 2.2 $ sco hihat hnotes
   where
-    hnotes = loopBy 4 $ mel
+    hnotes = mel
       [ loopBy 2 $ str (1/8) $
           mel $ temp <$> [ 1, 0.5, 0.5, 0, 0.2, 0.3, 1, 0.5]
       , rest 2 ]
@@ -125,7 +130,6 @@ xy2 = en $ mel [ xa 3, xb 2, xc 1, xa 4, xb 3, xc 2, xa 5, xb 4 ]
 xy3 = en $ mel [ xa 4, xb 3, xc 2, xa 5, xb 4, xc 3, xa 6, xb 5 ]
 xy4 = en $ mel [ rest 4                , xa 3, xb 4,  xb 5, xb 6
                , xa 7, xb 6, xb 5, xb 4, xa 5, xb 4, xb 3, xb 2]
-
 
 xa, xb, xc :: Int -> Sco (D, D)
 xa n = temp (0.7, p' n)
