@@ -6,6 +6,36 @@ import Csound.Base
 import Utils
 import Instr
 
+track = mix $ mel [ sec1, bridge, sec2, outro ]
+
+-- drum parts
+drums = har [k1, s1, h1]
+bridgeDrums = har [h1]
+
+-- section 1
+sec1 = mel
+  [ mel [har [drums, x1], har [drums, x2]]
+  , loopBy 2 $ mel [har [drums, x1, ch1, bs1], har [drums, x2, ch2, bs2]]
+  ]
+
+-- section 2
+sec2 = loopBy 2 $ har [loopBy 2 (har [drums, ch2, bs2, mul 0.7 x2']), x3]
+
+-- bridge
+bridge = har [loopBy 2 $ har [bridgeDrums, ch1], x3]
+
+-- outro
+outro = mel [
+    har [drums, x1]
+  , har [drums, x2]
+  , drums
+  , sco kick $ temp 0.7
+  ]
+
+-----------------------------------------------------
+--
+
+-- xylophone parts
 x1 = sco xylo $ en $ euc 32 0 [3, 2, 2, 1, 3, 3, 2]
   (fmap temp [(0.5, p 1), (0.4, p 2), (0.5, p 3), (1, p 5), (0.8, p 7), (0.5, p 6) ])
 
@@ -19,33 +49,16 @@ x2' = sco xylo $ en $ euc 32 0 [1, 1, 1, 2, 4, 2, 2, 1, 2]
   (fmap temp [(0.5, p' 1), (0.4, p' 7), (0.5, p' 3), (1, p' 5), (0.8, p' 7), (0.5, p' 6), (1, p' 5), (0.5, p' 4) ])
 
 
+-- hihat
 h1 = sco hihat $ en $ euc 32 0 [1] (fmap temp [1, 0.5, 0.3, 0.2])
 
+-- wood block as snare
 s1 = chamber 0.2 $ mixAt (0.15 + 0.1 * uosc 0.5) (echo 0.25 (0.2 + 0.2 * uosc 0.2)) $
   sco woodBlock $ en $ euc 32 4 [8] (fmap temp [0.5, 0.4, 0.3, 0.45, 0.55])
 
+-- kick drum
 k1 = sco kick $ en $ euc 32 0 [3, 3, 2, 1,2, 2,3] [temp 0.5]
 
-drums = har [k1, s1, h1]
-bridgeDrums = har [h1]
-outro = mel [
-    har [drums, x1]
-  , har [drums, x2]
-  , drums
-  , sco kick $ temp 0.7
-  ]
-
-sec1 = mel
-  [ mel [har [drums, x1], har [drums, x2]]
-  , loopBy 2 $ mel [har [drums, x1, ch1, bs1], har [drums, x2, ch2, bs2]]
-  ]
-sec2 = loopBy 2 $ har [loopBy 2 (har [drums, ch2, bs2, mul 0.7 x2']), x3]
-bridge = har [loopBy 2 $ har [bridgeDrums, ch1], x3]
-
-track = mix $ mel [ sec1, bridge, sec2, outro ]
-
------------------------------------------------------
---
 
 -- pad
 
