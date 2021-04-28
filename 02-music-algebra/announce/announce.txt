@@ -23,3 +23,7 @@
 * аудио движок csound (sudo apt-get install csound)
 
 
+Евклидовы биты
+
+https://disk.yandex.ru/d/OJYDQXX5wn3ZDA
+
