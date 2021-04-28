@@ -3,6 +3,23 @@ module Utils where
 
 import Csound.Base
 
+-- | Euclidean beats
+--
+-- > euc totalLength initDelay durations scores
+euc :: Double -> Double -> [Double] -> [Sco a] -> Sco a
+euc len delTime durs scos =
+  go (delTime, rest (sig $ double delTime)) $ zip (cycle durs) (cycle scos)
+  where
+    go :: (Double, Sco a) -> [(Double, Sco  a)] -> Sco a
+    go (time, res) xs = case xs of
+      []             -> res
+      (dt, a) : rest ->
+        let nextTime = time + dt
+        in  if nextTime < len
+              then go (nextTime, mel [res, str (sig $ double dt) a]) rest
+              else let dtReduced = len - time
+                   in  mel [res, str (sig $ double dtReduced) a]
+
 ----------------------------------------------------------------
 -- pitch helpers
 
