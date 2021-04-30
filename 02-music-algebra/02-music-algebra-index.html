@@ -42,7 +42,56 @@
 		<div class="reveal">
 			<div class="slides">
         <section> <h1>Musical Algebras</h1></section>
+
+        <section>
+            <h2> Everything is a Filter
+            </h2>
+
+              <p>Как превратить шум в настоящую перкуссию?</p>
+          
+          <pre class="haskell"><code data-trim data-noescape>
+-- шумовой хлопок
+dac $ mul (0.5 * linseg [1, 0.2, 0]) white
+          </code></pre>
+
+
+        </section>
+
 				
+        <section>
+            <h2> Everything is a Filter
+            </h2>
+
+         
+              <div class="container">
+                <div class="col">
+          <pre class="haskell"><code data-trim data-noescape>
+-- частоты - резонансы объекта
+-- множители - амплитуды резонансов
+wooden asig = bat 
+  (\x ->      bp 560 70 x 
+      + 0.8 * bp 1110 80 x 
+      +       bp 2500 70 x 
+      + 0.5 * bp 3000 100 x) 
+  asig
+   
+boom = 
+  mul (linseg [1, 0.2, 0] ** 2) white
+
+-- задание: превратить в ксилофон 
+dac $ room 0.15 $ wooden boom
+          </code></pre>
+                </div>
+                <div class="col">
+              <p>Оказывается многие объекты - это серия полосных фильтров </p>
+                <img src="images-02/block-1.jpg" width="200" height="350" />
+                </div>
+
+                </div>
+
+        </section>
+
+<!--
         <section>
         
           <h2>PAD sound</h2>
@@ -81,64 +130,20 @@ evenEnv = leg 0.5 0 1 0.5
 lowPassFilter cps = mlp (evenEnv * cps + 400) 0.1 
 
 fatSound cps = 
-  sum [ pw (0.1 + 0.4 * uosc 0.2) cps 
-      , 0.3 * uosc 0.13 * tri (cps * 2 * cent (2 * uosc 0.13)) 
-      , 0.2 * uosc 0.1  * tri (cps * 3 * cent (4 * uosc 0.17))
-      ]
+  sum [ pw lfo1 cps 
+      , 0.3 * uosc 0.13 * tri (cps * 2 * cent lfo2) 
+      , 0.2 * uosc 0.1  * tri (cps * 3 * cent lfo3) ]
+  where
+    lfo1 = 0.1 + 0.4 * uosc 0.2
+    lfo2 = 2 * uosc 0.13
+    lfo3 = 4 * uosc 0.17
  
 pad :: (D, D) -> SE Sig2
 pad (amp, cps) = pure $ fromMono $ sig amp * evenEnv * 
   (lowPassFilter (sig cps) $ fatSound (sig cps)
          </code></pre>
         </section>
-         
-        <section>
-            <h2> Everything is a Filter
-            </h2>
-
-              <p>Как превратить шум в настоящую перкуссию?</p>
-          
-          <pre class="haskell"><code data-trim data-noescape>
--- шумовой хлопок
-dac $ mul (0.5 * linseg [1, 0.2, 0]) white
-          </code></pre>
-
-
-        </section>
-
-        <section>
-            <h2> Everything is a Filter
-            </h2>
-
-         
-              <div class="container">
-                <div class="col">
-          <pre class="haskell"><code data-trim data-noescape>
--- частоты - резонансы объекта
--- множители - амплитуды резонансов
-wooden asig = bat 
-  (\x ->      bp 560 70 x 
-      + 0.8 * bp 1110 80 x 
-      +       bp 2500 70 x 
-      + 0.5 * bp 3000 100 x) 
-  asig
-   
-boom = 
-  mul (linseg [1, 0.2, 0] ** 2) white
-
--- задание: превратить в ксилофон 
-dac $ room 0.15 $ wooden boom
-          </code></pre>
-                </div>
-                <div class="col">
-              <p>Оказывается многие объекты - это серия полосных фильтров </p>
-                <img src="images-02/block-1.jpg" width="200" height="350" />
-                </div>
-
-                </div>
-
-        </section>
-
+  -->     
 
         <section>
             <h2> Sound Palette
@@ -455,7 +460,7 @@ chords = sco pad $ str 2 $ loopBy 2 $ mel
   , chord 0.5 [7.00, 7.03, 7.07]   -- Cm
   ]
 
-dac $ mix $ har [kk, eff (hall 2) $ del 2 $ chords]
+dac $ mix $ har [kk, hall 2 $ del 2 $ chords]
                 </code></pre>
 
 
@@ -492,32 +497,35 @@ dac $ mix $ har
             </div>
             </div>
          </section>
+
          <section>
-        <h3> SCO effects </h3>
+        <h3> SCO effects</h3>
 
           <pre class="haskell"><code data-trim data-noescape>
--- Добавляет обработку сигнала на блоке сигналов
+-- Добавляет обработку сигнала на блоке нот-сигналов
 eff :: (a -> SE b) -> Sco (Mix a) -> Sco (Mix b)
+
+-- Многие функцие знакомые по сигналам перегружены для нот
+at, mixAt, mul
 
 dac $ mix $ har 
   [ kk
 
   -- добавим дилэй на перкуссию
-  , eff (pure . mixAt 0.25 (echo 0.25 0.3)) wb
+  , mixAt 0.25 (echo 0.25 0.3) wb
 
   -- добавим реверб на аккорды
-  , eff (pure . mul 0.7 . hall 0.3) $ del 2 $ chords
+  , mul 0.7 $ hall 0.3 $ del 2 $ chords
   ]
           </code></pre>
          </section>
-          
+<!--           
           <section>
         <h3> Hi-hat </h3>
 
           <pre class="haskell"><code data-trim data-noescape>
 hihat :: D -> SE Sig2 
-hihat amp  = at fromMono $ at (mul 2 . lp 3500 0.1 . hp 400 0.1) 
-  $ mul (sig amp * linseg [1, 0.2, 0] ** 2) pink
+hihat amp  = ... -- filtered pink noise (see Instr.hs)
 
 -- ноты с амплитудами
 hnotes = loopBy 10 $ mel 
@@ -533,22 +541,7 @@ dac $ mix $ har [kk, hh, wb, chords]
           </code></pre>
 
          </section>
-          <section>
-        <h3> Bridge </h3>
-          <pre class="haskell"><code data-trim data-noescape>
-chords2 = sco pad $ str 2 $ loopBy 4 $ mel
-  [ chord 0.5 [7.00, 7.05, 7.08]   -- Fm
-  , chord 0.5 [7.02, 7.07, 7.10]   -- Gm
-  ]
-
-sec1   = har [kk, hh, wb, chords]
-bridge = har [hh, eff (pure . mixAt 0.5 (echo 0.25 0.3)) wb, chords2]
-
-track = mel [sec1, bridge, sec1]
-          </code></pre>
-
-         </section>
-         
+-->    
          <section>
 
            <h3> Bass Problem</h3>
@@ -595,7 +588,7 @@ bassNotes = loopBy 4 $ str 0.25 $ mel $ (temp . (0.5 , ) . cpspch) <$>
 
 bs = eff bass $ sco bassArg bassNotes
           
-dac $ mix $ har [kk, bs, hh, wb]
+dac $ mix $ har [kk, bs, wb]
           </code></pre>
          </section>
 
@@ -627,7 +620,7 @@ track  = mel [sec1, bridge, sec2, outro]    -- track
 
 
                 <pre class="haskell"><code data-trim data-noescape>
-pitches  = [1, 9/8, 6/5, 4/3, 3/2, 5/3, 15/8] -- ноты тональности
+pitches  = [1, 9/8, 6/5, 4/3, 3/2, 5/3, 15/8, 2] -- ноты тональности
 
 baseNote = cpspch 8.00                  -- тоника (оновная нота)
 
@@ -665,7 +658,93 @@ notes = mel [qn $ t 1, hn $ t 2, en $ mel [t 3, t 4]]
          </code></pre>
 
           </section>
+         <section>
+           <h3> Euclidean rhythms </h3>
+                <img src="images-02/euc-1.png" width="500" height="250" />
 
+                <pre class="haskell"><code data-trim data-noescape>
+A: 100 100 10               332  
+
+B: 10 110 110               21212  
+                </code></pre>
+
+          </section>
+         
+          <section>
+           <h3> Euclidean rhythms </h3>
+                <img src="images-02/euc-1.png" width="500" height="250" />
+
+                <pre class="haskell"><code data-trim data-noescape>
+euc :: Double -> Double -> [Double] -> [Sco a] -> Sco a
+euc totalLength initDelay  pattern  notes
+                </code></pre>
+
+          </section>
+
+          <section>
+           <h3> Euclidean rhythms </h3>
+                <img src="images-02/euc-1.png" width="500" height="250" />
+
+                <pre class="haskell"><code data-trim data-noescape>
+--  восьмые
+--  ноты          длина  сдвиг   паттерн           ноты
+a = en      $ euc  16        0   [3, 3, 2]         [temp 0.5]
+b = en      $ euc  16        0   [2, 1, 2, 1, 2]   [temp 0.5]
+
+dac $ har [ sco kick a
+          , sco hihat b]
+                </code></pre>
+
+          </section>
+
+          <section>
+           <h3> Euclidean rhythms </h3>
+                <pre class="haskell"><code data-trim data-noescape>
+--  восьмые       длина   начальный 
+--  ноты          цикла   сдвиг      паттерн           ноты
+a = en      $ euc  16        0      [3, 3, 2]         [temp 0.5]
+b = en      $ euc  16        0      [2, 1, 2, 1, 2]   [temp 0.5]
+
+dac $ har [ sco kick a
+          , sco hihat b]
+                </code></pre>
+
+          </section>
+
+          <section>
+           <h3> Drums </h3>
+                <pre class="haskell"><code data-trim data-noescape>
+-- hihat
+h1 = sco hihat $ en $ 
+  euc 32 0 [1] (fmap temp [1, 0.5, 0.3, 0.2])
+
+-- wood block as snare
+s1 = sco woodBlock $ en $ 
+  euc 32 4 [8] (fmap temp [0.5, 0.4, 0.3, 0.45, 0.55])
+
+-- kick drum
+k1 = sco kick $ en $ 
+  euc 32 0 [3, 3, 2, 1,2, 2,3] [temp 0.5]
+
+drums = har [h1, s1, k1]
+                </code></pre>
+
+          </section>
+
+          <section>
+           <h3> Melody </h3>
+                <pre class="haskell"><code data-trim data-noescape>
+
+-- xylophone 1
+xylo1 = sco xylo $ en $ 
+  euc 32 0 [3, 2, 2, 1, 3, 3, 2]
+    (fmap temp [ (0.5, p 1), (0.4, p 2), (0.5, p 3)
+               , (1, p 5), (0.8, p 7), (0.5, p 6) ])
+
+section = loopBy 2 $ mel [drums, har [drums, xylo1]]
+                </code></pre>
+
+          </section>
          
          <section>
 
